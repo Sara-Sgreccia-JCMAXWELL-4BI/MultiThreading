@@ -49,9 +49,9 @@ public class MultiThread {
         long end = System.currentTimeMillis();
         
         try{
-            tic.join();
-            tac.join();
-            toe.join();
+            tic.join();  //mette in attesa finchè il THREAD non finisce la sua esecuzione 
+            tac.join();  //mette in attesa finchè il THREAD non finisce la sua esecuzione 
+            toe.join();  //mette in attesa finchè il THREAD non finisce la sua esecuzione 
         }
         catch(InterruptedException e){
             
@@ -95,7 +95,7 @@ class TicTacToe implements Runnable {
             int r = random.nextInt(n)+j;  //Valori compresi tra 100 e 300
             
             try {
-                TimeUnit.MILLISECONDS.sleep(r);
+                TimeUnit.MILLISECONDS.sleep(r); //interrompe momentaneamente il THREAD
             } catch (InterruptedException e) {}
             
             
