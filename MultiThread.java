@@ -11,7 +11,8 @@ package multithread;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import static multithread.TicTacToe.conta;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 /**
  *
  * @author Matteo Palitto
@@ -32,15 +33,15 @@ public class MultiThread {
         int TTac= random.nextInt(n)+j;  //Valori compresi tra 100 e 300
         int TToe= random.nextInt(n)+j;  //Valori compresi tra 100 e 300
         long start = System.currentTimeMillis();  
-        
+        Monitor monitor = new Monitor();
         // Posso creare un THREAD e avviarlo immediatamente
-        Thread tic = new Thread (new TicTacToe("TIC"));
+        Thread tic = new Thread (new TicTacToe("TIC", monitor));
         
         // Posso creare un 2ndo THREAD e farlo iniziare qualche tempo dopo...
-        Thread tac = new Thread(new TicTacToe("TAC"));
+        Thread tac = new Thread(new TicTacToe("TAC",monitor ));
         
         // Posso creare un 3ndo THREAD e farlo iniziare qualche tempo dopo...
-        Thread toe = new Thread (new TicTacToe("TOE"));
+        Thread toe = new Thread (new TicTacToe("TOE", monitor));
         
         tic.start();  // avvio del primo THREAD
         tac.start();  // avvio del secondo THREAD
@@ -49,17 +50,38 @@ public class MultiThread {
         long end = System.currentTimeMillis();
         
         try{
-            tic.join();  //mette in attesa finchè il THREAD non finisce la sua esecuzione 
-            tac.join();  //mette in attesa finchè il THREAD non finisce la sua esecuzione 
-            toe.join();  //mette in attesa finchè il THREAD non finisce la sua esecuzione 
+            tic.join();
+            tac.join();
+            toe.join();
         }
         catch(InterruptedException e){
             
         }
         System.out.println("Main Thread completata! tempo di esecuzione: " + (end - start) + "ms");
-        System.out.println("score: "+conta);
+        System.out.println("score: "+monitor.getScore());
     }
     
+}
+class Monitor {                   //classe del monitor
+    String ultimoTHREAD = " ";    //ultimo thread che ha scritto sullo schermo 
+    int score = 0;                //punteggio viene condiviso dai thread                 
+    
+   public int getScore(){         //fornisce il punteggio 
+       return score;              
+   }
+   
+  public synchronized void Score (String thread, String msg) throws InterruptedException{   //metodo condiviso dai thread 
+      Random random = new Random();  //creazione numero casuale
+      int j = 100;
+      int n = 300-j;
+      int r = random.nextInt(n)+j;  //Valori compresi tra 100 e 300
+      msg = "<" + r + "> ";    //System.out.print(msg);
+      if(thread == "TOE" && ultimoTHREAD == "TAC"){          //controlla quando toe viene prima di tac 
+          score++;                                          //aggiornamento del punteggio
+      }
+      TimeUnit.MILLISECONDS.sleep(r);              //casuale ora diventa rappresentante
+      ultimoTHREAD = thread;                      //l'ultimo thread viene visualizzato
+  }
 }
 
 // Ci sono vari (troppi) metodi per creare un THREAD in Java questo e' il mio preferito per i vantaggi che offre
@@ -71,11 +93,11 @@ class TicTacToe implements Runnable {
     // non essesndo "static" c'e' una copia delle seguenti variabili per ogni THREAD 
     private String t;
     private String msg;
-    public static boolean score = false;  // variabile booleana 
-    public static int conta = 0;
+    Monitor monitor; 
                                  
-    public TicTacToe (String s) {   // Costruttore, possiamo usare il costruttore per passare dei parametri al THREAD
+    public TicTacToe (String s, Monitor m) {   // Costruttore, possiamo usare il costruttore per passare dei parametri al THREAD
         this.t = s;
+        this.monitor = m;
     }
     
     @Override // Annotazione per il compilatore
@@ -83,34 +105,13 @@ class TicTacToe implements Runnable {
     // per approfondimenti http://lancill.blogspot.it/2012/11/annotations-override.html
     public void run() {        // esegue il THREAD quando è attivo
         for (int i = 10; i > 0; i--) {
-            msg = "<" + t + "> ";    //System.out.print(msg);
-            Random random = new Random();  //creazione numero casuale
-            int j = 100;
-            int n = 300-j;
-            if("TAC".equals(t))
-            {
-                score = true;
+            try {    
+                monitor.Score(t,msg);
+            } catch (InterruptedException ex) {   //richiamo eccezione
+                Logger.getLogger(TicTacToe.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
-            int r = random.nextInt(n)+j;  //Valori compresi tra 100 e 300
-            
-            try {
-                TimeUnit.MILLISECONDS.sleep(r); //interrompe momentaneamente il THREAD
-            } catch (InterruptedException e) {}
-            
-            
-           if("TOE".equals(t) && score == true)  //controllo se toe si trova subito dopo tac
-           {
-               conta++;     //incremento il punteggio 
-           }
-           else
-           {
-               score = false;
-           }
-                   
-            msg += t + ": " + i;
+            msg = "<" + t + ">" + t + ":" + i;
             System.out.println(msg);
-         
         }
     }
     
